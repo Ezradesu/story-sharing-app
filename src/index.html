@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" href="/favicon.png" />
+    <title>App</title>
+
+    <script type="module" src="/scripts/index.js"></script>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Jua&display=swap");
+    </style>
+  </head>
+  <body>
+    <a href="#main-content" class="skip-link">Skip to Content</a>
+    <header>
+      <div class="main-header container">
+        <a class="brand-name" href="#/">App</a>
+
+        <nav id="navigation-drawer" class="navigation-drawer">
+          <ul id="nav-list" class="nav-list">
+            <li><a href="#/">Beranda</a></li>
+            <li><a href="#/add-story">Post</a></li>
+            <li><a href="#/register">Register</a></li>
+            <li><a href="#/login">Login</a></li>
+            <li><a href="#/saved" class="nav-link">Saved</a></li>
+            <button id="logout-button">Logout</button>
+          </ul>
+        </nav>
+
+        <button id="drawer-button" class="drawer-button">☰</button>
+      </div>
+    </header>
+
+    <main id="main-content" class="main-content">
+      <section>
+        <h2>Saved Stories</h2>
+        <div id="savedStoryList"></div>
+      </section>
+    </main>
+  </body>
+  <script type="module">
+    import HomePage from "/scripts/pages/home/home-page.js";
+    const page = new HomePage();
+    document.getElementById("main-content").innerHTML = await page.render();
+    await page.afterRender();
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const mainContent = document.querySelector("#main-content");
+      const skipLink = document.querySelector(".skip-link");
+
+      skipLink.addEventListener("click", function (event) {
+        event.preventDefault(); // Mencegah refresh halaman
+        skipLink.blur(); // Menghilangkan fokus skip to content
+        mainContent.focus(); // Fokus ke konten utama
+        mainContent.scrollIntoView(); // Halaman scroll ke konten utama
+      });
+
+      // Pastikan main-content dapat menerima focus
+      if (mainContent && !mainContent.hasAttribute("tabindex")) {
+        mainContent.setAttribute("tabindex", "-1");
+      }
+    });
+  </script>
+</html>

@@ -1,0 +1,8 @@
+APP_URL=<url_aplikasi>
+MAP_SERVICE_API_KEY=<api_key>
+
+reviewers note:
+pada project ini saya tidak menggunakan api service, karena mostly meminta nomor rekening bank dan saya belum memilki akun bank.
+
+jadi saya menggunakan Leaflet sebagai map servicenya
+
