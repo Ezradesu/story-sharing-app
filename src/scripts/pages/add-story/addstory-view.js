@@ -5,13 +5,16 @@ export default class AddStoryView {
         <h1>Tambah Cerita</h1>
         <form id="add-story-form" enctype="multipart/form-data">
           <div class="form-group">
+            <label for="description">Deskripsi:</label>
             <input id="description" type="text" name="description" placeholder="Deskripsi" required />
           </div>
           <input id="photo" type="file" name="photo" accept="image/*" style="display:none;" />
           <div class="form-group">
+            <label for="lat">Latitude:</label>
             <input id="lat" type="text" name="lat" placeholder="Latitude (opsional)" readonly />
           </div>
           <div class="form-group">
+            <label for="lon">Longitude:</label>
             <input id="lon" type="text" name="lon" placeholder="Longitude (opsional)" readonly />
           </div>
           <div class="camera-container">
@@ -68,6 +71,64 @@ export default class AddStoryView {
         };
         reader.readAsDataURL(file);
       }
+    });
+  }
+  _captureImage() {
+    const canvas = document.createElement("canvas");
+    canvas.width = this.view.video.videoWidth;
+    canvas.height = this.view.video.videoHeight;
+    canvas.getContext("2d").drawImage(this.view.video, 0, 0);
+
+    const dataURL = canvas.toDataURL("image/jpeg");
+    this.view.preview.src = dataURL;
+    this.view.preview.style.display = "block";
+    this.view.video.style.display = "none";
+    this.view.captureBtn.textContent = "Ambil Ulang";
+    this.view.uploadBtn.style.display = "inline";
+
+    const blob = this.model.dataURLtoBlob(dataURL);
+    const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    this.view.photoInput.files = dt.files;
+  }
+
+  _initForm() {
+    this.view.form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      if (!this.view.photoInput.files.length) {
+        alert("Mohon ambil atau unggah foto terlebih dahulu");
+        return;
+      }
+
+      const description = document.getElementById("description").value;
+      const photo = this.view.photoInput.files[0];
+      const lat = this.view.latInput.value;
+      const lon = this.view.lonInput.value;
+
+      this.view.uploadBtn.disabled = true;
+      this.view.uploadBtn.textContent = "Mengirim...";
+
+      try {
+        await this.model.uploadStory({
+          token: this.token,
+          description,
+          photo,
+          lat,
+          lon,
+        });
+        alert("Story berhasil dikirim!");
+
+        this.destroy();
+
+        window.location.href = "#/";
+      } catch (err) {
+        alert("Gagal mengirim story: " + err.message);
+      }
+
+      this.view.uploadBtn.disabled = false;
+      this.view.uploadBtn.textContent = "Upload Cerita";
     });
   }
 }

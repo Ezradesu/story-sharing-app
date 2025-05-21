@@ -33,7 +33,7 @@ a {
   margin-top: 10px;
 }
 
-.skip-to-content {
+.skip-link {
   position: absolute !important;
   height: 1px;
   width: 1px;
@@ -42,7 +42,7 @@ a {
   color: red;
 }
 
-.skip-to-content:focus {
+.skip-link:focus {
   position: unset !important;
 }
 

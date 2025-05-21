@@ -41,16 +41,16 @@
     </main>
   </body>
   <script type="module">
-    // import HomePage from "/scripts/pages/home/home-page.js";
-    // const page = new HomePage();
-    // document.getElementById("main-content").innerHTML = await page.render();
-    // await page.afterRender();
+    import HomePage from "/scripts/pages/home/home-page.js";
+    const page = new HomePage();
+    document.getElementById("main-content").innerHTML = await page.render();
+    await page.afterRender();
 
-    (async () => {
-      const page = new HomePage();
-      document.getElementById("main-content").innerHTML = await page.render();
-      await page.afterRender();
-    })();
+    // (async () => {
+    //   const page = new HomePage();
+    //   document.getElementById("main-content").innerHTML = await page.render();
+    //   await page.afterRender();
+    // })();
   </script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {

@@ -1,6 +1,6 @@
 import CONFIG from "../../config.js";
 
-const LoginModel = {
+export default class LoginModel {
   async loginUser({ email, password }) {
     const response = await fetch(`${CONFIG.BASE_URL}/login`, {
       method: "POST",
@@ -9,15 +9,10 @@ const LoginModel = {
       },
       body: JSON.stringify({ email, password }),
     });
-
     const data = await response.json();
-
     if (!response.ok) {
       throw new Error(data.message || "Login gagal");
     }
-
     return data.loginResult;
-  },
-};
-
-export default LoginModel;
+  }
+}

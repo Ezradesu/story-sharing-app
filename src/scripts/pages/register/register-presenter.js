@@ -1,21 +1,21 @@
 import RegisterModel from "./register-model.js";
 
-const RegisterPresenter = {
-  async handleFormSubmit(event, form) {
-    event.preventDefault();
+export default class RegisterPresenter {
+  constructor(view, model) {
+    this.view = view;
+    this.model = model;
 
-    const name = form.name.value;
-    const email = form.email.value;
-    const password = form.password.value;
+    this.view.initElements();
+    this.view.bindFormSubmit(this.handleRegister.bind(this));
+  }
 
+  async handleRegister(userData) {
     try {
-      await RegisterModel.registerUser({ name, email, password });
-      alert("Register berhasil! Silakan login.");
-      window.location.href = "/login";
+      await this.model.registerUser(userData);
+      this.view.showSuccessMessage();
+      this.view.redirectToLogin();
     } catch (error) {
-      alert(`Error: ${error.message}`);
+      this.view.showErrorMessage(error.message);
     }
-  },
-};
-
-export default RegisterPresenter;
+  }
+}

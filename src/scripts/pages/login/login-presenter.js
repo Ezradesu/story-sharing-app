@@ -1,23 +1,22 @@
 import LoginModel from "./login-model.js";
 
-const LoginPresenter = {
-  async handleFormSubmit(event, form) {
-    event.preventDefault();
+export default class LoginPresenter {
+  constructor(view, model) {
+    this.view = view;
+    this.model = model;
 
-    const email = form.email.value;
-    const password = form.password.value;
+    this.view.initElements();
+    this.view.bindFormSubmit(this.handleLogin.bind(this));
+  }
 
+  async handleLogin(formData) {
     try {
-      const loginResult = await LoginModel.loginUser({ email, password });
-
+      const loginResult = await this.model.loginUser(formData);
       localStorage.setItem("token", loginResult.token);
-      alert("Login berhasil!");
-
-      window.location.href = "/";
+      this.view.showAlert("Login berhasil!");
+      this.view.redirectToHome();
     } catch (error) {
-      alert(`Error: ${error.message}`);
+      this.view.showAlert(`Error: ${error.message}`);
     }
-  },
-};
-
-export default LoginPresenter;
+  }
+}

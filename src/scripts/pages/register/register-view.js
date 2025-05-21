@@ -1,9 +1,9 @@
 export default class RegisterView {
   constructor() {
-    this.app = document.querySelector("#app") || document.body;
+    this.form = null;
   }
 
-  render() {
+  static render() {
     return `
       <section class="container">
         <h1>Register Page</h1>
@@ -21,19 +21,24 @@ export default class RegisterView {
     `;
   }
 
+  initElements() {
+    this.form = document.querySelector("#register-form");
+    return this.form;
+  }
+
   bindFormSubmit(handler) {
-    const form = document.querySelector("#register-form");
-    form.addEventListener("submit", async (event) => {
+    this.form.addEventListener("submit", (event) => {
       event.preventDefault();
-
-      const userData = {
-        name: form.name.value,
-        email: form.email.value,
-        password: form.password.value,
-      };
-
-      handler(userData);
+      handler(this.getFormData());
     });
+  }
+
+  getFormData() {
+    return {
+      name: this.form.name.value,
+      email: this.form.email.value,
+      password: this.form.password.value,
+    };
   }
 
   showSuccessMessage() {
@@ -44,7 +49,7 @@ export default class RegisterView {
     alert(`Error: ${message}`);
   }
 
-  redirectTo(url) {
-    window.location.href = url;
+  redirectToLogin() {
+    window.location.href = "/login";
   }
 }

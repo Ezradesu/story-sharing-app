@@ -8,35 +8,7 @@ export default class AddStoryPage {
   }
 
   async render() {
-    return `
-      <section id="main-content" class="container">
-        <h1>Tambah Cerita</h1>
-        <form id="add-story-form" enctype="multipart/form-data">
-          <div class="form-group">
-            <input id="description" type="text" name="description" placeholder="Deskripsi" required />
-          </div>
-          <input id="photo" type="file" name="photo" accept="image/*" style="display:none;" />
-          <div class="form-group">
-            <input id="lat" type="text" name="lat" placeholder="Latitude (opsional)" readonly />
-          </div>
-          <div class="form-group">
-            <input id="lon" type="text" name="lon" placeholder="Longitude (opsional)" readonly />
-          </div>
-          <div class="camera-container">
-            <video id="camera" autoplay></video>
-            <img id="preview" alt="Preview foto" />
-            <div class="camera-actions">
-              <button type="button" id="capture" class="btn">Ambil Foto</button>
-              <button type="submit" id="upload" class="btn">Upload Cerita</button>
-            </div>
-          </div>
-          <div class="map-wrapper">
-            <p class="map-info">Pilih lokasi anda</p>
-            <div class="map-container"><div id="map"></div></div>
-          </div>
-        </form>
-      </section>
-    `;
+    return AddStoryView.render();
   }
 
   async afterRender() {

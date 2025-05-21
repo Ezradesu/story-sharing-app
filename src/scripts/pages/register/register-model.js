@@ -1,6 +1,6 @@
 import CONFIG from "../../config.js";
 
-const RegisterModel = {
+export default class RegisterModel {
   async registerUser({ name, email, password }) {
     const response = await fetch(`${CONFIG.BASE_URL}/register`, {
       method: "POST",
@@ -9,13 +9,10 @@ const RegisterModel = {
       },
       body: JSON.stringify({ name, email, password }),
     });
-
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.message || "Gagal register");
     }
     return data;
-  },
-};
-
-export default RegisterModel;
+  }
+}
