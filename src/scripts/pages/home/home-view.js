@@ -34,7 +34,7 @@ export default class HomeView {
         (story) => `
             <div class="story-card">
               <h3>${story.name}</h3>
-              <img src="${story.photoUrl}" alt="${
+              <img alt="${story.description}" src="${story.photoUrl}" alt="${
           story.description
         }" width="200"/>
               <p>${story.description}</p>

@@ -1,4 +1,4 @@
-APP_URL= https://tugas-akhir-ontermediate.netlify.app/
+APP_URL= https://tugas-akhir-intermediate.netlify.app/
 MAP_SERVICE_API_KEY=<api_key>
 
 ////reviewers note:

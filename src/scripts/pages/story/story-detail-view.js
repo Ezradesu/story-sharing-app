@@ -25,7 +25,7 @@ export default class StoryDetailView {
           
           <div class="story-image-container">
             <img src="${story.photoUrl}" alt="${
-      story.name
+      story.description
     }" class="story-image" />
           </div>
           
@@ -103,5 +103,16 @@ export default class StoryDetailView {
         this.map.invalidateSize();
       }, 100);
     });
+  }
+
+  _loadLeafletCSS() {
+    if (!document.querySelector('link[href*="leaflet.css"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      link.integrity = "sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=";
+      link.crossOrigin = "";
+      document.head.appendChild(link);
+    }
   }
 }
