@@ -1,11 +1,5 @@
 const CACHE_NAME = "app-v1";
-const urlsToCache = [
-  "/",
-  "/index.html",
-  "/bundle.js",
-  "/styles.css",
-  // Tambahkan semua asset yang ingin di-cache
-];
+const urlsToCache = ["/", "/index.html", "/bundle.js", "/styles.css"];
 
 // Install Service Worker
 self.addEventListener("install", (event) => {
