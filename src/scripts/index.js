@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if ("serviceWorker" in navigator && "PushManager" in window) {
     window.addEventListener("load", async () => {
       try {
-        const registration = await navigator.serviceWorker.register("/sw.js");
+        const registration = await navigator.serviceWorker.register("../sw.js");
         console.log("Service Worker registered:", registration);
 
         const subscription = await registration.pushManager.getSubscription();
