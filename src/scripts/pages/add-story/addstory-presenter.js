@@ -7,8 +7,8 @@ export default class AddStoryPresenter {
     this.stream = null;
     this.view.initElements();
 
-    this.token = localStorage.getItem("token");
-    this.isLoggedIn = !!this.token;
+    // Ambil status login dari model
+    this.isLoggedIn = this.model.isUserLoggedIn();
 
     this._initCamera();
     this._initMap();
@@ -31,26 +31,6 @@ export default class AddStoryPresenter {
     }
 
     this.view.captureBtn.addEventListener("click", () => this._captureImage());
-  }
-
-  _captureImage() {
-    const canvas = document.createElement("canvas");
-    canvas.width = this.view.video.videoWidth;
-    canvas.height = this.view.video.videoHeight;
-    canvas.getContext("2d").drawImage(this.view.video, 0, 0);
-
-    const dataURL = canvas.toDataURL("image/jpeg");
-    this.view.preview.src = dataURL;
-    this.view.preview.style.display = "block";
-    this.view.video.style.display = "none";
-    this.view.captureBtn.textContent = "Ambil Ulang";
-    this.view.uploadBtn.style.display = "inline";
-
-    const blob = this.model.dataURLtoBlob(dataURL);
-    const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    this.view.photoInput.files = dt.files;
   }
 
   async _initMap() {
@@ -95,42 +75,54 @@ export default class AddStoryPresenter {
   }
 
   _initForm() {
-    this.view.form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    // Implementasi form handling bisa ditambahkan di sini
+    // Contoh jika ada form submit:
+    const form = this.view.getForm();
+    if (form) {
+      form.addEventListener("submit", (e) => this._handleSubmit(e));
+    }
+  }
 
-      if (!this.view.photoInput.files.length) {
-        alert("Mohon ambil atau unggah foto terlebih dahulu");
-        return;
-      }
+  async _handleSubmit(event) {
+    event.preventDefault();
 
-      const description = document.getElementById("description").value;
-      const photo = this.view.photoInput.files[0];
-      const lat = this.view.latInput.value;
-      const lon = this.view.lonInput.value;
+    // Ambil data dari form
+    const formData = this.view.getFormData();
 
-      this.view.uploadBtn.disabled = true;
-      this.view.uploadBtn.textContent = "Mengirim...";
+    try {
+      // Upload story menggunakan model (token sudah dihandle di model)
+      const result = await this.model.uploadStory({
+        description: formData.description,
+        photo: formData.photo,
+        lat: formData.lat,
+        lon: formData.lon,
+      });
 
-      try {
-        await this.model.uploadStory({
-          token: this.token,
-          description,
-          photo,
-          lat,
-          lon,
-        });
-        alert("Story berhasil dikirim!");
+      console.log("Story uploaded successfully:", result);
+      // Handle success (redirect, show message, etc.)
+    } catch (error) {
+      console.error("Error uploading story:", error);
+      // Handle error
+    }
+  }
 
-        this.destroy();
+  _captureImage() {
+    // Implementasi capture image
+    if (this.view.video && this.view.canvas) {
+      const context = this.view.canvas.getContext("2d");
+      context.drawImage(
+        this.view.video,
+        0,
+        0,
+        this.view.canvas.width,
+        this.view.canvas.height
+      );
 
-        window.location.href = "#/";
-      } catch (err) {
-        alert("Gagal mengirim story: " + err.message);
-      }
-
-      this.view.uploadBtn.disabled = false;
-      this.view.uploadBtn.textContent = "Upload Cerita";
-    });
+      // Convert to blob and set to form
+      this.view.canvas.toBlob((blob) => {
+        this.view.setImageBlob(blob);
+      });
+    }
   }
 
   destroy() {

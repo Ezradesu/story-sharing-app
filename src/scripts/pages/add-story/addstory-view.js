@@ -56,7 +56,7 @@ export default class AddStoryView {
       <div class="upload-fallback">
         <p>Tidak dapat mengakses kamera. Silakan upload foto.</p>
         <input type="file" id="manual-photo" accept="image/*">
-        <img id="manual-preview" style="display:none; width:100%; margin-top:10px;">
+        <img id="manual-preview" alt="Berikut preview foto anda" style="display:none; width:100%; margin-top:10px;">
       </div>
     `;
     document.getElementById("manual-photo").addEventListener("change", (e) => {

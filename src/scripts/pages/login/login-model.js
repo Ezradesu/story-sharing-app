@@ -15,4 +15,27 @@ export default class LoginModel {
     }
     return data.loginResult;
   }
+
+  // Method untuk menyimpan token ke localStorage
+  saveAuthToken(token) {
+    if (!token) {
+      throw new Error("Token tidak valid");
+    }
+    localStorage.setItem("token", token);
+  }
+
+  // Method untuk mendapatkan token dari localStorage
+  getAuthToken() {
+    return localStorage.getItem("token");
+  }
+
+  // Method untuk mengecek apakah user sudah login
+  isUserLoggedIn() {
+    return !!this.getAuthToken();
+  }
+
+  // Method untuk menghapus token (logout)
+  removeAuthToken() {
+    localStorage.removeItem("token");
+  }
 }

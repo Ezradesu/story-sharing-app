@@ -13,9 +13,8 @@ export default class HomePresenter {
   }
 
   async init() {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
+    // Check login status melalui model
+    if (!this.model.isUserLoggedIn()) {
       this.view.showLoginRequired();
       return;
     }
@@ -23,7 +22,7 @@ export default class HomePresenter {
     this.view.showLoading();
 
     try {
-      const stories = await this.model.getStories(token);
+      const stories = await this.model.getStories();
       this.view.renderStories(stories);
     } catch (error) {
       console.error("Error fetching stories:", error);
@@ -51,9 +50,8 @@ export default class HomePresenter {
   }
 
   async _saveStory(storyId) {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
+    // Check login status melalui model
+    if (!this.model.isUserLoggedIn()) {
       throw new Error("Anda harus login untuk menyimpan cerita.");
     }
 
@@ -64,13 +62,8 @@ export default class HomePresenter {
         throw new Error("Cerita ini sudah disimpan sebelumnya.");
       }
 
-      // Get story details
-      const stories = await this.model.getStories(token);
-      const storyToSave = stories.find((story) => story.id === storyId);
-
-      if (!storyToSave) {
-        throw new Error("Cerita tidak ditemukan.");
-      }
+      // Get story details melalui model
+      const storyToSave = await this.model.getStoryById(storyId);
 
       // Save to IndexedDB
       await SavedStoryDB.saveStory({
