@@ -1,4 +1,5 @@
 import "../styles/styles.css";
+import CONFIG from "./config";
 
 import App from "./pages/app";
 
@@ -10,7 +11,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const registration = await navigator.serviceWorker.register("/sw.js");
         console.log("Service Worker registered:", registration);
 
-        // Cek apakah sudah subscribe
         const subscription = await registration.pushManager.getSubscription();
         if (subscription) {
           console.log("Sudah ter-subscribe ke push:", subscription);
@@ -19,7 +19,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           updatePushButtonState(false);
         }
 
-        // Setup tombol push notification
         setupPushButton(registration);
       } catch (err) {
         console.error("Service Worker Error:", err);
@@ -79,8 +78,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.log("Push subscribed:", subscription);
       updatePushButtonState(true);
 
-      // Kirim `subscription` ke server kamu (POST ke API)
-      await fetch("/api/save-subscription", {
+      await fetch(`${CONFIG.BASE_URL}/api/save-subscription`, {
         method: "POST",
         body: JSON.stringify(subscription),
         headers: { "Content-Type": "application/json" },

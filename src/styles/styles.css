@@ -255,7 +255,7 @@ a {
 }
 
 #push-subscribe-button {
-  font-family: jua;
+  font-family: "jua";
   padding: 10px 20px;
   border: none;
   border-radius: 5px;
@@ -264,13 +264,13 @@ a {
 }
 
 #push-subscribe-button.subscribe {
-  font-family: jua;
+  font-family: "jua";
   background-color: #4caf50;
   color: white;
 }
 
 #push-subscribe-button.unsubscribe {
-  font-family: jua;
+  font-family: "jua";
   background-color: #f44336;
   color: white;
 }
