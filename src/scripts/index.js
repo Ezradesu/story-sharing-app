@@ -10,16 +10,59 @@ document.addEventListener("DOMContentLoaded", async () => {
         const registration = await navigator.serviceWorker.register("/sw.js");
         console.log("Service Worker registered:", registration);
 
+        // Cek apakah sudah subscribe
         const subscription = await registration.pushManager.getSubscription();
-        if (!subscription) {
-          subscribeUserToPush(registration);
-        } else {
+        if (subscription) {
           console.log("Sudah ter-subscribe ke push:", subscription);
+          updatePushButtonState(true);
+        } else {
+          updatePushButtonState(false);
         }
+
+        // Setup tombol push notification
+        setupPushButton(registration);
       } catch (err) {
         console.error("Service Worker Error:", err);
       }
     });
+  }
+
+  function setupPushButton(registration) {
+    const pushButton = document.getElementById("push-subscribe-button");
+    if (!pushButton) return;
+
+    pushButton.addEventListener("click", async () => {
+      try {
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (subscription) {
+          // Jika sudah subscribe, unsubscribe
+          await subscription.unsubscribe();
+          console.log("Push unsubscribed");
+          updatePushButtonState(false);
+        } else {
+          // Jika belum subscribe, subscribe
+          await subscribeUserToPush(registration);
+        }
+      } catch (err) {
+        console.error("Error handling push subscription:", err);
+      }
+    });
+  }
+
+  function updatePushButtonState(isSubscribed) {
+    const pushButton = document.getElementById("push-subscribe-button");
+    if (!pushButton) return;
+
+    if (isSubscribed) {
+      pushButton.textContent = "Matikan Notifikasi";
+      pushButton.classList.remove("subscribe");
+      pushButton.classList.add("unsubscribe");
+    } else {
+      pushButton.textContent = "Aktifkan Notifikasi";
+      pushButton.classList.remove("unsubscribe");
+      pushButton.classList.add("subscribe");
+    }
   }
 
   async function subscribeUserToPush(registration) {
@@ -34,9 +77,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       console.log("Push subscribed:", subscription);
+      updatePushButtonState(true);
 
       // Kirim `subscription` ke server kamu (POST ke API)
-      // Uncomment dan sesuaikan endpoint di bawah untuk menyimpan subscription ke server
       await fetch("/api/save-subscription", {
         method: "POST",
         body: JSON.stringify(subscription),
@@ -44,6 +87,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     } catch (err) {
       console.error("Gagal subscribe ke push:", err);
+      updatePushButtonState(false);
     }
   }
 

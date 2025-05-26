@@ -254,6 +254,24 @@ a {
   font-size: 16px;
 }
 
+#push-subscribe-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#push-subscribe-button.subscribe {
+  background-color: #4caf50;
+  color: white;
+}
+
+#push-subscribe-button.unsubscribe {
+  background-color: #f44336;
+  color: white;
+}
+
 .map-wrapper {
   width: 100%;
   max-width: 500px;

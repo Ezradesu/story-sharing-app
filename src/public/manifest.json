@@ -1,0 +1,25 @@
+{
+  "id": "/?source=pwa",
+  "start_url": "/?source=pwa",
+  "name": "TAI",
+  "display": "standalone",
+  "theme_color": "#A040A0",
+  "background_color": "#EEEEEE",
+  "icons": [
+    {
+      "src": "/img/favicon.png",
+      "sizes": "48x48",
+      "type": "png"
+    },
+    {
+      "src": "/img/favicon.png",
+      "sizes": "144x144",
+      "type": "png"
+    },
+    {
+      "src": "/img/favicon.png",
+      "sizes": "196x196",
+      "type": "png"
+    }
+  ]
+}
