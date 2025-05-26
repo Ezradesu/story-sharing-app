@@ -37,11 +37,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // Kirim `subscription` ke server kamu (POST ke API)
       // Uncomment dan sesuaikan endpoint di bawah untuk menyimpan subscription ke server
-      // await fetch('/api/save-subscription', {
-      //   method: 'POST',
-      //   body: JSON.stringify(subscription),
-      //   headers: { 'Content-Type': 'application/json' }
-      // });
+      ////////asdfasdfads
+      await fetch("/api/save-subscription", {
+        method: "POST",
+        body: JSON.stringify(subscription),
+        headers: { "Content-Type": "application/json" },
+      });
     } catch (err) {
       console.error("Gagal subscribe ke push:", err);
     }
