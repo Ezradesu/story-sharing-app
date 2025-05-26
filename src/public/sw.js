@@ -1,67 +1,95 @@
-// src/sw-register.js
+const CACHE_NAME = "app-v1";
+const urlsToCache = ["/", "/index.html", "/bundle.js", "/styles.css"];
 
-export async function registerSW() {
-  if ("serviceWorker" in navigator) {
-    try {
-      const registration = await navigator.serviceWorker.register("/sw.js", {
-        scope: "/",
-      });
+// Install Service Worker
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log("Cache opened");
+      return cache.addAll(urlsToCache);
+    })
+  );
+});
 
-      // Handle updates
-      registration.addEventListener("updatefound", () => {
-        const newWorker = registration.installing;
+// Activate Service Worker
+self.addEventListener("activate", (event) => {
+  const cacheAllowlist = [CACHE_NAME];
 
-        newWorker.addEventListener("statechange", () => {
-          if (
-            newWorker.state === "installed" &&
-            navigator.serviceWorker.controller
-          ) {
-            // New service worker available
-            console.log("New service worker available");
-
-            // Optional: Show update notification to user
-            if (
-              confirm(
-                "Aplikasi telah diperbarui. Refresh untuk menggunakan versi terbaru?"
-              )
-            ) {
-              window.location.reload();
-            }
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheAllowlist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
           }
-        });
-      });
+        })
+      );
+    })
+  );
+});
 
-      console.log("Service Worker registered successfully:", registration);
-      return registration;
-    } catch (error) {
-      console.error("Service Worker registration failed:", error);
-      throw error;
-    }
-  } else {
-    console.warn("Service Worker not supported");
-    throw new Error("Service Worker not supported");
+// Fetch dengan Strategy Cache First, kemudian Network
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      // Cache hit - return response
+      if (response) {
+        return response;
+      }
+      return fetch(event.request);
+    })
+  );
+});
+
+// Event untuk menangani Push Notification
+self.addEventListener("push", (event) => {
+  let data = {};
+
+  try {
+    data = event.data.json();
+  } catch (e) {
+    data = {
+      title: "Notifikasi Baru",
+      body: event.data ? event.data.text() : "Anda menerima notifikasi baru",
+      icon: "/images/logo.png", // Sesuaikan dengan path icon aplikasi Anda
+    };
   }
-}
 
-// Function untuk unregister (opsional, untuk development)
-export async function unregisterSW() {
-  if ("serviceWorker" in navigator) {
-    const registrations = await navigator.serviceWorker.getRegistrations();
+  const options = {
+    body: data.body || "Anda menerima notifikasi baru",
+    icon: data.icon || "/images/logo.png",
+    badge: data.badge || "/favicon.png",
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || "/",
+    },
+  };
 
-    for (let registration of registrations) {
-      await registration.unregister();
-    }
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Notifikasi Baru", options)
+  );
+});
 
-    console.log("All service workers unregistered");
-  }
-}
+// Event saat notifikasi diklik
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
 
-// Function untuk request notification permission
-export async function requestNotificationPermission() {
-  if ("Notification" in window) {
-    const permission = await Notification.requestPermission();
-    console.log("Notification permission:", permission);
-    return permission === "granted";
-  }
-  return false;
-}
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      const url = event.notification.data.url || "/";
+
+      // Jika sudah ada tab yang terbuka, fokuskan
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url === url && "focus" in client) {
+          return client.focus();
+        }
+      }
+
+      // Jika tidak ada tab yang terbuka, buka tab baru
+      if (clients.openWindow) {
+        return clients.openWindow(url);
+      }
+    })
+  );
+});
