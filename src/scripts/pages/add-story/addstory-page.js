@@ -16,7 +16,6 @@ export default class AddStoryPage {
     const view = new AddStoryView();
     this.presenter = new AddStoryPresenter(view, model);
 
-    // Emergency backup - add a failsafe cleanup
     this._setupEmergencyCleanup();
   }
 
@@ -34,13 +33,11 @@ export default class AddStoryPage {
   }
 
   _setupEmergencyCleanup() {
-    // This is just a backup in case the App's destroy isn't called
     const cleanupFunction = () => {
-      // Simple check to see if we've navigated away from this page
       if (!document.getElementById("add-story-form")) {
         console.log("Emergency cleanup: Add story form no longer in DOM");
         this.destroy();
-        // Remove listeners after cleanup
+
         window.removeEventListener("hashchange", cleanupFunction);
       }
     };

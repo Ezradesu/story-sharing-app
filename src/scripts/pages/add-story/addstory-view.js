@@ -1,20 +1,22 @@
 export default class AddStoryView {
+  constructor() {
+    this.mapInstance = null;
+    this.mapMarker = null;
+  }
+
   static render() {
     return `
       <section id="main-content" class="container">
         <h1>Tambah Cerita</h1>
         <form id="add-story-form" enctype="multipart/form-data">
           <div class="form-group">
-            <label for="description">Masukan deskripsi:</label>
             <input id="description" type="text" name="description" placeholder="Deskripsi" required />
           </div>
           <input id="photo" type="file" name="photo" accept="image/*" style="display:none;" />
           <div class="form-group">
-            <label for="lat">Masukan latitude:</label>
             <input id="lat" type="text" name="lat" placeholder="Latitude (opsional)" readonly />
           </div>
           <div class="form-group">
-            <label for="lon">Masukan longitude:</label>
             <input id="lon" type="text" name="lon" placeholder="Longitude (opsional)" readonly />
           </div>
           <div class="camera-container">
@@ -25,7 +27,7 @@ export default class AddStoryView {
               <button type="submit" id="upload" class="btn">Upload Cerita</button>
             </div>
           </div>
-          <div aria-label="Pilih lokasi anda" class="map-wrapper">
+          <div class="map-wrapper">
             <p class="map-info">Pilih lokasi anda</p>
             <div class="map-container"><div id="map"></div></div>
           </div>
@@ -44,6 +46,7 @@ export default class AddStoryView {
     this.lonInput = document.getElementById("lon");
     this.form = document.getElementById("add-story-form");
     this.mapInfo = document.querySelector(".map-info");
+    this.uploadBtn.style.display = "none"; // Hide upload button initially
   }
 
   setCameraStream(stream) {
@@ -56,137 +59,112 @@ export default class AddStoryView {
       <div class="upload-fallback">
         <p>Tidak dapat mengakses kamera. Silakan upload foto.</p>
         <input type="file" id="manual-photo" accept="image/*">
-        <img id="manual-preview" alt="Berikut preview foto anda" style="display:none; width:100%; margin-top:10px;">
+        <img id="manual-preview" style="display:none; width:100%; margin-top:10px;">
       </div>
     `;
+
     document.getElementById("manual-photo").addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          document.getElementById("manual-preview").src = e.target.result;
-          document.getElementById("manual-preview").style.display = "block";
-          this.photoInput.files = document.getElementById("manual-photo").files;
-          this.uploadBtn.style.display = "inline";
-        };
-        reader.readAsDataURL(file);
-      }
+      this.handleManualPhotoChange(e);
     });
   }
-  _captureImage() {
+
+  handleManualPhotoChange(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById("manual-preview").src = e.target.result;
+        document.getElementById("manual-preview").style.display = "block";
+        this.photoInput.files = document.getElementById("manual-photo").files;
+        this.uploadBtn.style.display = "inline";
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  captureImage() {
     const canvas = document.createElement("canvas");
-    canvas.width = this.view.video.videoWidth;
-    canvas.height = this.view.video.videoHeight;
-    canvas.getContext("2d").drawImage(this.view.video, 0, 0);
+    canvas.width = this.video.videoWidth;
+    canvas.height = this.video.videoHeight;
+    canvas.getContext("2d").drawImage(this.video, 0, 0);
 
     const dataURL = canvas.toDataURL("image/jpeg");
-    this.view.preview.src = dataURL;
-    this.view.preview.style.display = "block";
-    this.view.video.style.display = "none";
-    this.view.captureBtn.textContent = "Ambil Ulang";
-    this.view.uploadBtn.style.display = "inline";
+    this.preview.src = dataURL;
+    this.preview.style.display = "block";
+    this.video.style.display = "none";
+    this.captureBtn.textContent = "Ambil Ulang";
+    this.uploadBtn.style.display = "inline";
 
-    const blob = this.model.dataURLtoBlob(dataURL);
-    const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    this.view.photoInput.files = dt.files;
+    return dataURL;
   }
 
-  _initForm() {
-    this.view.form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      if (!this.view.photoInput.files.length) {
-        alert("Mohon ambil atau unggah foto terlebih dahulu");
-        return;
-      }
-
-      const description = document.getElementById("description").value;
-      const photo = this.view.photoInput.files[0];
-      const lat = this.view.latInput.value;
-      const lon = this.view.lonInput.value;
-
-      this.view.uploadBtn.disabled = true;
-      this.view.uploadBtn.textContent = "Mengirim...";
-
-      try {
-        await this.model.uploadStory({
-          token: this.token,
-          description,
-          photo,
-          lat,
-          lon,
-        });
-        alert("Story berhasil dikirim!");
-
-        this.destroy();
-
-        window.location.href = "#/";
-      } catch (err) {
-        alert("Gagal mengirim story: " + err.message);
-      }
-
-      this.view.uploadBtn.disabled = false;
-      this.view.uploadBtn.textContent = "Upload Cerita";
-    });
+  resetCamera() {
+    this.preview.style.display = "none";
+    this.video.style.display = "block";
+    this.captureBtn.textContent = "Ambil Foto";
   }
 
-  _captureImage() {
-    const canvas = document.createElement("canvas");
-    canvas.width = this.view.video.videoWidth;
-    canvas.height = this.view.video.videoHeight;
-    canvas.getContext("2d").drawImage(this.view.video, 0, 0);
+  initMap(L, lat, lng) {
+    const map = L.map("map").setView([lat, lng], 13);
 
-    const dataURL = canvas.toDataURL("image/jpeg");
-    this.view.preview.src = dataURL;
-    this.view.preview.style.display = "block";
-    this.view.video.style.display = "none";
-    this.view.captureBtn.textContent = "Ambil Ulang";
-    this.view.uploadBtn.style.display = "inline";
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(
+      map
+    );
+    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
 
-    const blob = this.model.dataURLtoBlob(dataURL);
-    const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    this.view.photoInput.files = dt.files;
+    this.mapInstance = map;
+    this.mapMarker = marker;
+
+    setTimeout(() => map.invalidateSize(), 100);
+
+    return { map, marker };
   }
-  _initForm() {
-    this.view.form.addEventListener("submit", async (e) => {
-      e.preventDefault();
 
-      if (!this.view.photoInput.files.length) {
-        alert("Mohon ambil atau unggah foto terlebih dahulu");
-        return;
-      }
+  setMapPosition(lat, lng) {
+    if (this.mapMarker) {
+      this.mapMarker.setLatLng([lat, lng]);
+    }
+    this.latInput.value = lat.toFixed(6);
+    this.lonInput.value = lng.toFixed(6);
+  }
 
-      const description = document.getElementById("description").value;
-      const photo = this.view.photoInput.files[0];
-      const lat = this.view.latInput.value;
-      const lon = this.view.lonInput.value;
+  updateMapInfo(message) {
+    this.mapInfo.textContent = message;
+  }
 
-      this.view.uploadBtn.disabled = true;
-      this.view.uploadBtn.textContent = "Mengirim...";
+  setLocationValues(lat, lng) {
+    this.latInput.value = lat;
+    this.lonInput.value = lng;
+  }
 
-      try {
-        await this.model.uploadStory({
-          token: this.token,
-          description,
-          photo,
-          lat,
-          lon,
-        });
-        alert("Story berhasil dikirim!");
+  setSubmitButtonState(isLoading) {
+    this.uploadBtn.disabled = isLoading;
+    this.uploadBtn.textContent = isLoading ? "Mengirim..." : "Upload Cerita";
+  }
 
-        this.destroy();
+  getFormData() {
+    return {
+      description: document.getElementById("description").value,
+      photo: this.photoInput.files[0],
+      lat: this.latInput.value,
+      lon: this.lonInput.value,
+    };
+  }
 
-        window.location.href = "#/";
-      } catch (err) {
-        alert("Gagal mengirim story: " + err.message);
-      }
+  showAlert(message) {
+    alert(message);
+  }
 
-      this.view.uploadBtn.disabled = false;
-      this.view.uploadBtn.textContent = "Upload Cerita";
-    });
+  cleanupResources() {
+    if (this.video) {
+      this.video.srcObject = null;
+      this.video.load();
+    }
+
+    if (this.mapInstance) {
+      this.mapInstance.remove();
+      this.mapInstance = null;
+      this.mapMarker = null;
+    }
   }
 }

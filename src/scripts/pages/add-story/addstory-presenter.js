@@ -7,8 +7,8 @@ export default class AddStoryPresenter {
     this.stream = null;
     this.view.initElements();
 
-    // Ambil status login dari model
-    this.isLoggedIn = this.model.isUserLoggedIn();
+    this.token = localStorage.getItem("token");
+    this.isLoggedIn = !!this.token;
 
     this._initCamera();
     this._initMap();
@@ -30,7 +30,20 @@ export default class AddStoryPresenter {
       this.view.showFallbackUpload();
     }
 
-    this.view.captureBtn.addEventListener("click", () => this._captureImage());
+    this.view.captureBtn.addEventListener("click", () => this._handleCapture());
+  }
+
+  _handleCapture() {
+    if (this.view.preview.style.display === "block") {
+      this.view.resetCamera();
+    } else {
+      const dataURL = this.view.captureImage();
+      const blob = this.model.dataURLtoBlob(dataURL);
+      const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      this.view.photoInput.files = dt.files;
+    }
   }
 
   async _initMap() {
@@ -39,94 +52,75 @@ export default class AddStoryPresenter {
 
     try {
       const position = await this.model.getCurrentLocation();
-      this._loadMap(position.coords.latitude, position.coords.longitude);
-      this.view.latInput.value = position.coords.latitude;
-      this.view.lonInput.value = position.coords.longitude;
-      this.view.mapInfo.textContent =
-        "Pilih lokasi dengan menggeser penanda pada peta";
-    } catch {
-      this._loadMap(fallbackLat, fallbackLng);
-      this.view.mapInfo.textContent =
-        "GPS tidak tersedia. Pilih lokasi manual di peta.";
+      const { lat, lng } = position.coords;
+      const { map, marker } = this.view.initMap(L, lat, lng);
+
+      this.view.setLocationValues(lat, lng);
+      this.view.updateMapInfo(
+        "Pilih lokasi dengan menggeser penanda pada peta"
+      );
+
+      // Set up map event listeners
+      marker.on("dragend", () => {
+        const pos = marker.getLatLng();
+        this.view.setMapPosition(pos.lat, pos.lng);
+      });
+
+      map.on("click", (e) => {
+        this.view.setMapPosition(e.latlng.lat, e.latlng.lng);
+      });
+    } catch (error) {
+      const { map, marker } = this.view.initMap(L, fallbackLat, fallbackLng);
+      this.view.updateMapInfo(
+        "GPS tidak tersedia. Pilih lokasi manual di peta."
+      );
+
+      // Set up map event listeners
+      marker.on("dragend", () => {
+        const pos = marker.getLatLng();
+        this.view.setMapPosition(pos.lat, pos.lng);
+      });
+
+      map.on("click", (e) => {
+        this.view.setMapPosition(e.latlng.lat, e.latlng.lng);
+      });
     }
-  }
-
-  _loadMap(lat, lng) {
-    const map = L.map("map").setView([lat, lng], 13);
-
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(
-      map
-    );
-    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-
-    marker.on("dragend", () => {
-      const pos = marker.getLatLng();
-      this.view.latInput.value = pos.lat.toFixed(6);
-      this.view.lonInput.value = pos.lng.toFixed(6);
-    });
-
-    map.on("click", (e) => {
-      marker.setLatLng(e.latlng);
-      this.view.latInput.value = e.latlng.lat.toFixed(6);
-      this.view.lonInput.value = e.latlng.lng.toFixed(6);
-    });
-
-    setTimeout(() => map.invalidateSize(), 100);
   }
 
   _initForm() {
-    // Implementasi form handling bisa ditambahkan di sini
-    // Contoh jika ada form submit:
-    const form = this.view.getForm();
-    if (form) {
-      form.addEventListener("submit", (e) => this._handleSubmit(e));
-    }
-  }
+    this.view.form.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-  async _handleSubmit(event) {
-    event.preventDefault();
+      const formData = this.view.getFormData();
 
-    // Ambil data dari form
-    const formData = this.view.getFormData();
+      if (!formData.photo) {
+        this.view.showAlert("Mohon ambil atau unggah foto terlebih dahulu");
+        return;
+      }
 
-    try {
-      // Upload story menggunakan model (token sudah dihandle di model)
-      const result = await this.model.uploadStory({
-        description: formData.description,
-        photo: formData.photo,
-        lat: formData.lat,
-        lon: formData.lon,
-      });
+      this.view.setSubmitButtonState(true);
 
-      console.log("Story uploaded successfully:", result);
-      // Handle success (redirect, show message, etc.)
-    } catch (error) {
-      console.error("Error uploading story:", error);
-      // Handle error
-    }
-  }
+      try {
+        await this.model.uploadStory({
+          token: this.token,
+          description: formData.description,
+          photo: formData.photo,
+          lat: formData.lat,
+          lon: formData.lon,
+        });
 
-  _captureImage() {
-    // Implementasi capture image
-    if (this.view.video && this.view.canvas) {
-      const context = this.view.canvas.getContext("2d");
-      context.drawImage(
-        this.view.video,
-        0,
-        0,
-        this.view.canvas.width,
-        this.view.canvas.height
-      );
+        this.view.showAlert("Story berhasil dikirim!");
+        this.destroy();
+        window.location.href = "#/";
+      } catch (err) {
+        this.view.showAlert("Gagal mengirim story: " + err.message);
+      }
 
-      // Convert to blob and set to form
-      this.view.canvas.toBlob((blob) => {
-        this.view.setImageBlob(blob);
-      });
-    }
+      this.view.setSubmitButtonState(false);
+    });
   }
 
   destroy() {
-    // semisal ada destroy
     if (this._isDestroyed) {
       console.log("AddStoryPresenter: already destroyed, skipping");
       return;
@@ -135,7 +129,7 @@ export default class AddStoryPresenter {
     console.log("AddStoryPresenter: Destroying and cleaning up resources");
 
     try {
-      // mati
+      // Hentikan stream
       if (this.stream) {
         this.stream.getTracks().forEach((track) => {
           console.log(`AddStoryPresenter: Stopping ${track.kind} track`);
@@ -148,10 +142,9 @@ export default class AddStoryPresenter {
         this.model.stopCameraStream();
       }
 
-      if (this.view && this.view.video) {
-        console.log("AddStoryPresenter: Clearing video source");
-        this.view.video.srcObject = null;
-        this.view.video.load();
+      // Bersihkan resource di view
+      if (this.view) {
+        this.view.cleanupResources();
       }
 
       this._isDestroyed = true;
