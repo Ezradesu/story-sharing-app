@@ -1,74 +1,63 @@
 const CACHE_NAME = "app-v1";
-
-// Jangan hardcode file dengan hash, cache secara dinamis saja
 const ESSENTIAL_URLS = ["/", "/index.html"];
 
 // Install Service Worker
-self.addEventListener("install", function (event) {
-  console.log("Service Worker installing...");
+self.addEventListener("install", (event) => {
+  console.log("🔧 Installing Service Worker...");
 
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then(function (cache) {
-        console.log("Cache opened");
-        // Hanya cache URL essential yang pasti ada
-        return cache.addAll(ESSENTIAL_URLS);
-      })
-      .then(function () {
-        console.log("Essential files cached successfully");
-        // Skip waiting untuk aktivasi langsung
+      .then((cache) => cache.addAll(ESSENTIAL_URLS))
+      .then(() => {
+        console.log("✅ Essential files cached");
         return self.skipWaiting();
       })
-      .catch(function (error) {
-        console.error("Cache addAll failed:", error);
-        // Tetap skip waiting meski cache gagal
+      .catch((err) => {
+        console.error("⚠️ Failed to cache essentials:", err);
         return self.skipWaiting();
       })
   );
 });
 
 // Activate Service Worker
-self.addEventListener("activate", function (event) {
-  console.log("Service Worker activating...");
+self.addEventListener("activate", (event) => {
+  console.log("⚡ Activating Service Worker...");
 
   const cacheAllowlist = [CACHE_NAME];
 
   event.waitUntil(
     caches
       .keys()
-      .then(function (cacheNames) {
-        return Promise.all(
-          cacheNames.map(function (cacheName) {
-            if (cacheAllowlist.indexOf(cacheName) === -1) {
-              console.log("Deleting old cache:", cacheName);
-              return caches.delete(cacheName);
+      .then((cacheNames) =>
+        Promise.all(
+          cacheNames.map((name) => {
+            if (!cacheAllowlist.includes(name)) {
+              console.log("🗑 Deleting old cache:", name);
+              return caches.delete(name);
             }
           })
-        );
-      })
-      .then(function () {
-        console.log("Service Worker activated and claiming clients");
-        return self.clients.claim();
-      })
+        )
+      )
+      .then(() => self.clients.claim())
   );
 });
 
-// Fetch dengan Strategy Cache First untuk assets, Network First untuk HTML
-self.addEventListener("fetch", function (event) {
-  // Skip non-GET requests
-  if (event.request.method !== "GET") {
-    return;
-  }
+// Fetch handler
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
 
-  // Skip cross-origin requests
   const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) {
-    return;
-  }
 
-  // Skip API calls (jika ada)
-  if (url.pathname.startsWith("/api/")) {
+  // Ignore cross-origin
+  if (url.origin !== self.location.origin) return;
+
+  // Ignore API endpoints or JSON data
+  if (
+    url.pathname.startsWith("/notifications/") ||
+    url.pathname.startsWith("/api/") ||
+    event.request.headers.get("Accept")?.includes("application/json")
+  ) {
     return;
   }
 
@@ -79,7 +68,7 @@ async function handleFetchRequest(request) {
   const url = new URL(request.url);
 
   try {
-    // Untuk HTML documents - Network First strategy
+    // Network First untuk dokumen HTML
     if (
       request.destination === "document" ||
       url.pathname === "/" ||
@@ -88,106 +77,73 @@ async function handleFetchRequest(request) {
       return await networkFirstStrategy(request);
     }
 
-    // Untuk assets (JS, CSS, images) - Cache First strategy
+    // Cache First untuk asset (JS, CSS, gambar)
     return await cacheFirstStrategy(request);
-  } catch (error) {
-    console.error("Fetch handler error:", error);
+  } catch (err) {
+    console.error("❌ Fetch error:", err);
 
-    // Fallback ke cache atau offline page
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
+    // Fallback ke cache
+    const cached = await caches.match(request);
+    if (cached) return cached;
 
-    // Last resort fallback
+    // Fallback ke homepage kalau dokumen
     if (request.destination === "document") {
-      const cachedIndex = await caches.match("/");
-      if (cachedIndex) {
-        return cachedIndex;
-      }
+      return (await caches.match("/")) || (await caches.match("/index.html"));
     }
 
-    throw error;
+    throw err;
   }
 }
 
-// Network First Strategy - untuk HTML
+// Network First
 async function networkFirstStrategy(request) {
   try {
-    const networkResponse = await fetch(request);
-
-    // Cache successful responses
-    if (networkResponse.status === 200) {
+    const response = await fetch(request);
+    if (response && response.status === 200) {
       const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
+      cache.put(request, response.clone());
     }
-
-    return networkResponse;
-  } catch (error) {
-    console.log("Network failed, trying cache:", request.url);
-
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-
-    throw error;
+    return response;
+  } catch {
+    return await caches.match(request);
   }
 }
 
-// Cache First Strategy - untuk assets
+// Cache First
 async function cacheFirstStrategy(request) {
-  const cachedResponse = await caches.match(request);
+  const cached = await caches.match(request);
+  if (cached) return cached;
 
-  if (cachedResponse) {
-    console.log("Cache hit:", request.url);
-    return cachedResponse;
+  const response = await fetch(request);
+  if (response && response.status === 200) {
+    const cache = await caches.open(CACHE_NAME);
+    cache.put(request, response.clone());
   }
 
-  console.log("Cache miss, fetching:", request.url);
-
-  try {
-    const networkResponse = await fetch(request);
-
-    // Cache successful responses
-    if (networkResponse.status === 200) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
-    }
-
-    return networkResponse;
-  } catch (error) {
-    console.error("Network fetch failed:", request.url, error);
-    throw error;
-  }
+  return response;
 }
 
-// Event untuk menangani Push Notification
-self.addEventListener("push", function (event) {
-  console.log("Push notification received");
+// Push Notification
+self.addEventListener("push", (event) => {
+  console.log("📨 Push received");
 
-  let data = {};
+  let data = {
+    title: "Notifikasi Baru",
+    body: "Anda menerima notifikasi baru",
+  };
 
   if (event.data) {
     try {
       data = event.data.json();
+      console.log("📦 Push data:", data);
     } catch (e) {
-      console.log("Failed to parse push data as JSON:", e);
-      data = {
-        title: "Notifikasi Baru",
-        body: event.data.text() || "Anda menerima notifikasi baru",
-      };
+      data.body = event.data.text();
     }
-  } else {
-    data = {
-      title: "Notifikasi Baru",
-      body: "Anda menerima notifikasi baru",
-    };
   }
 
   const options = {
-    body: data.body || "Anda menerima notifikasi baru",
-    icon: data.icon || "/favicon.ico", // Gunakan favicon yang pasti ada
+    body: data.body,
+    icon: data.icon || "/favicon.ico",
     badge: data.badge || "/favicon.ico",
     vibrate: [100, 50, 100],
     data: {
@@ -197,46 +153,38 @@ self.addEventListener("push", function (event) {
     actions: data.actions || [],
   };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title || "Notifikasi Baru", options)
-  );
+  event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
-// Event saat notifikasi diklik
-self.addEventListener("notificationclick", function (event) {
-  console.log("Notification clicked");
+// Notification Click
+self.addEventListener("notificationclick", (event) => {
+  console.log("🔔 Notification clicked");
   event.notification.close();
 
-  const url = (event.notification.data && event.notification.data.url) || "/";
+  const urlToOpen = event.notification.data?.url || "/";
 
   event.waitUntil(
     clients
-      .matchAll({
-        type: "window",
-        includeUncontrolled: true,
-      })
-      .then(function (clientList) {
-        // Cari tab yang sudah terbuka
-        for (let i = 0; i < clientList.length; i++) {
-          const client = clientList[i];
-          if (client.url.includes(url) && client.focus) {
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes(urlToOpen) && "focus" in client) {
             return client.focus();
           }
         }
 
-        // Buka tab baru jika tidak ada yang terbuka
         if (clients.openWindow) {
-          return clients.openWindow(url);
+          return clients.openWindow(urlToOpen);
         }
       })
   );
 });
 
-// Error handler untuk debugging
-self.addEventListener("error", function (event) {
-  console.error("Service Worker error:", event.error);
+// Global error handlers
+self.addEventListener("error", (event) => {
+  console.error("💥 Service Worker error:", event.error);
 });
 
-self.addEventListener("unhandledrejection", function (event) {
-  console.error("Service Worker unhandled rejection:", event.reason);
+self.addEventListener("unhandledrejection", (event) => {
+  console.error("💥 Unhandled Rejection:", event.reason);
 });

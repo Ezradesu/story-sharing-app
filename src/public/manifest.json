@@ -7,17 +7,17 @@
   "background_color": "#EEEEEE",
   "icons": [
     {
-      "src": "/img/favicon.png",
+      "src": "/images/48.png",
       "sizes": "48x48",
       "type": "png"
     },
     {
-      "src": "/img/favicon.png",
+      "src": "/images/144.png",
       "sizes": "144x144",
       "type": "png"
     },
     {
-      "src": "/img/favicon.png",
+      "src": "/images/196.png",
       "sizes": "196x196",
       "type": "png"
     }

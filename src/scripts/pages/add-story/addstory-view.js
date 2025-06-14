@@ -105,11 +105,18 @@ export default class AddStoryView {
   }
 
   initMap(L, lat, lng) {
+    if (this.mapInstance) {
+      this.mapInstance.setView([lat, lng], 13);
+      this.mapMarker.setLatLng([lat, lng]);
+      return { map: this.mapInstance, marker: this.mapMarker };
+    }
+
     const map = L.map("map").setView([lat, lng], 13);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(
       map
     );
+
     const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
 
     this.mapInstance = map;
