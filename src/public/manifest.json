@@ -1,7 +1,8 @@
 {
   "id": "/?source=pwa",
   "start_url": "/?source=pwa",
-  "name": "TAI",
+  "name": "Tugas Akhir Intermediate",
+  "short_name": "Tugas Akhir",
   "display": "standalone",
   "theme_color": "#A040A0",
   "background_color": "#EEEEEE",
@@ -9,17 +10,34 @@
     {
       "src": "/images/48.png",
       "sizes": "48x48",
-      "type": "png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/images/144.png",
       "sizes": "144x144",
-      "type": "png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/images/196.png",
       "sizes": "196x196",
-      "type": "png"
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/sspc.png",
+      "sizes": "1919x1079",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/images/ssmob.png",
+      "sizes": "393x842",
+      "type": "image/png",
+      "form_factor": "narrow"
     }
   ]
 }
