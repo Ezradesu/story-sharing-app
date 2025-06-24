@@ -105,38 +105,65 @@ export default class AddStoryView {
   }
 
   initMap(L, lat, lng) {
-    if (this.mapInstance) {
-      this.mapInstance.setView([lat, lng], 13);
-      this.mapMarker.setLatLng([lat, lng]);
-      return { map: this.mapInstance, marker: this.mapMarker };
+    // Pastikan map container ada dan kosong
+    const mapContainer = document.getElementById("map");
+    if (!mapContainer) {
+      console.error("Map container not found");
+      return null;
     }
 
-    const map = L.map("map").setView([lat, lng], 13);
+    // Jika map sudah ada, hapus dulu
+    if (this.mapInstance) {
+      console.log("Removing existing map instance");
+      this.mapInstance.remove();
+      this.mapInstance = null;
+      this.mapMarker = null;
+    }
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(
-      map
-    );
+    // Bersihkan container
+    mapContainer.innerHTML = "";
 
-    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+    try {
+      const map = L.map("map").setView([lat, lng], 13);
 
-    this.mapInstance = map;
-    this.mapMarker = marker;
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(
+        map
+      );
 
-    setTimeout(() => map.invalidateSize(), 100);
+      const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
 
-    return { map, marker };
+      this.mapInstance = map;
+      this.mapMarker = marker;
+
+      // Invalidate size setelah DOM siap
+      setTimeout(() => {
+        if (this.mapInstance) {
+          this.mapInstance.invalidateSize();
+        }
+      }, 100);
+
+      return { map, marker };
+    } catch (error) {
+      console.error("Error initializing map:", error);
+      return null;
+    }
   }
 
   setMapPosition(lat, lng) {
     if (this.mapMarker) {
       this.mapMarker.setLatLng([lat, lng]);
     }
+    if (this.mapInstance) {
+      this.mapInstance.setView([lat, lng]);
+    }
     this.latInput.value = lat.toFixed(6);
     this.lonInput.value = lng.toFixed(6);
   }
 
   updateMapInfo(message) {
-    this.mapInfo.textContent = message;
+    if (this.mapInfo) {
+      this.mapInfo.textContent = message;
+    }
   }
 
   setLocationValues(lat, lng) {
@@ -145,8 +172,10 @@ export default class AddStoryView {
   }
 
   setSubmitButtonState(isLoading) {
-    this.uploadBtn.disabled = isLoading;
-    this.uploadBtn.textContent = isLoading ? "Mengirim..." : "Upload Cerita";
+    if (this.uploadBtn) {
+      this.uploadBtn.disabled = isLoading;
+      this.uploadBtn.textContent = isLoading ? "Mengirim..." : "Upload Cerita";
+    }
   }
 
   getFormData() {
@@ -163,15 +192,35 @@ export default class AddStoryView {
   }
 
   cleanupResources() {
-    if (this.video) {
+    console.log("AddStoryView: Cleaning up resources");
+
+    // Cleanup video stream
+    if (this.video && this.video.srcObject) {
+      const stream = this.video.srcObject;
+      if (stream && stream.getTracks) {
+        stream.getTracks().forEach((track) => {
+          track.stop();
+        });
+      }
       this.video.srcObject = null;
-      this.video.load();
     }
 
+    // Cleanup map
     if (this.mapInstance) {
-      this.mapInstance.remove();
+      console.log("AddStoryView: Removing map instance");
+      try {
+        this.mapInstance.remove();
+      } catch (error) {
+        console.warn("Error removing map:", error);
+      }
       this.mapInstance = null;
       this.mapMarker = null;
+    }
+
+    // Clear map container
+    const mapContainer = document.getElementById("map");
+    if (mapContainer) {
+      mapContainer.innerHTML = "";
     }
   }
 }

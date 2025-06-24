@@ -127,33 +127,35 @@ async function cacheFirstStrategy(request) {
 self.addEventListener("push", (event) => {
   console.log("📨 Push received");
 
-  let data = {
+  let payload = {
     title: "Notifikasi Baru",
-    body: "Anda menerima notifikasi baru",
+    options: {
+      body: "Anda menerima notifikasi baru",
+    },
   };
 
   if (event.data) {
     try {
-      data = event.data.json();
-      console.log("📦 Push data:", data);
+      payload = event.data.json();
+      console.log("📦 Push data:", payload);
     } catch (e) {
-      data.body = event.data.text();
+      payload.options.body = event.data.text();
     }
   }
 
   const options = {
-    body: data.body,
-    icon: data.icon || "/favicon.ico",
-    badge: data.badge || "/favicon.ico",
+    body: payload.options?.body || "Anda menerima notifikasi baru",
+    icon: payload.options?.icon || "/favicon.ico",
+    badge: payload.options?.badge || "/favicon.ico",
     vibrate: [100, 50, 100],
     data: {
-      url: data.url || "/",
+      url: payload.options?.url || "/",
     },
     requireInteraction: false,
-    actions: data.actions || [],
+    actions: payload.options?.actions || [],
   };
 
-  event.waitUntil(self.registration.showNotification(data.title, options));
+  event.waitUntil(self.registration.showNotification(payload.title, options));
 });
 
 // Notification Click

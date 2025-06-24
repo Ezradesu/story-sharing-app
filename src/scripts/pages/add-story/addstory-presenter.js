@@ -5,17 +5,20 @@ export default class AddStoryPresenter {
     this.view = view;
     this.model = model;
     this.stream = null;
-    this.view.initElements();
 
     this.token = localStorage.getItem("token");
     this.isLoggedIn = !!this.token;
 
+    // Track if destroy has already been called
+    this._isDestroyed = false;
+
+    // Initialize view elements first
+    this.view.initElements();
+
+    // Then initialize components
     this._initCamera();
     this._initMap();
     this._initForm();
-
-    // Track if destroy has already been called
-    this._isDestroyed = false;
   }
 
   async _initCamera() {
@@ -30,12 +33,18 @@ export default class AddStoryPresenter {
       this.view.showFallbackUpload();
     }
 
-    this.view.captureBtn.addEventListener("click", () => this._handleCapture());
+    // Add event listener for capture button
+    if (this.view.captureBtn) {
+      this.view.captureBtn.addEventListener("click", () =>
+        this._handleCapture()
+      );
+    }
   }
 
   _handleCapture() {
     if (this.view.preview.style.display === "block") {
       this.view.resetCamera();
+      this.view.uploadBtn.style.display = "none";
     } else {
       const dataURL = this.view.captureImage();
       const blob = this.model.dataURLtoBlob(dataURL);
@@ -51,43 +60,71 @@ export default class AddStoryPresenter {
     const fallbackLng = 106.8;
 
     try {
+      console.log("AddStoryPresenter: Getting current location...");
       const position = await this.model.getCurrentLocation();
-      const { lat, lng } = position.coords;
-      const { map, marker } = this.view.initMap(L, lat, lng);
+      const { latitude: lat, longitude: lng } = position.coords;
+
+      console.log(
+        "AddStoryPresenter: Initializing map with location:",
+        lat,
+        lng
+      );
+      const mapResult = this.view.initMap(L, lat, lng);
+
+      if (!mapResult) {
+        throw new Error("Failed to initialize map");
+      }
+
+      const { map, marker } = mapResult;
 
       this.view.setLocationValues(lat, lng);
       this.view.updateMapInfo(
         "Pilih lokasi dengan menggeser penanda pada peta"
       );
 
-      // Set up map event listeners
-      marker.on("dragend", () => {
-        const pos = marker.getLatLng();
-        this.view.setMapPosition(pos.lat, pos.lng);
-      });
-
-      map.on("click", (e) => {
-        this.view.setMapPosition(e.latlng.lat, e.latlng.lng);
-      });
+      this._setupMapEventListeners(map, marker);
     } catch (error) {
-      const { map, marker } = this.view.initMap(L, fallbackLat, fallbackLng);
+      console.log(
+        "AddStoryPresenter: Using fallback location due to:",
+        error.message
+      );
+      const mapResult = this.view.initMap(L, fallbackLat, fallbackLng);
+
+      if (!mapResult) {
+        console.error("Failed to initialize map with fallback location");
+        return;
+      }
+
+      const { map, marker } = mapResult;
       this.view.updateMapInfo(
         "GPS tidak tersedia. Pilih lokasi manual di peta."
       );
 
-      // Set up map event listeners
-      marker.on("dragend", () => {
-        const pos = marker.getLatLng();
-        this.view.setMapPosition(pos.lat, pos.lng);
-      });
-
-      map.on("click", (e) => {
-        this.view.setMapPosition(e.latlng.lat, e.latlng.lng);
-      });
+      this._setupMapEventListeners(map, marker);
     }
   }
 
+  _setupMapEventListeners(map, marker) {
+    if (!map || !marker) return;
+
+    // Set up marker drag event
+    marker.on("dragend", () => {
+      const pos = marker.getLatLng();
+      this.view.setMapPosition(pos.lat, pos.lng);
+    });
+
+    // Set up map click event
+    map.on("click", (e) => {
+      this.view.setMapPosition(e.latlng.lat, e.latlng.lng);
+    });
+  }
+
   _initForm() {
+    if (!this.view.form) {
+      console.error("Form not found");
+      return;
+    }
+
     this.view.form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -113,10 +150,10 @@ export default class AddStoryPresenter {
         this.destroy();
         window.location.href = "#/";
       } catch (err) {
+        console.error("Error uploading story:", err);
         this.view.showAlert("Gagal mengirim story: " + err.message);
+        this.view.setSubmitButtonState(false);
       }
-
-      this.view.setSubmitButtonState(false);
     });
   }
 
@@ -129,7 +166,7 @@ export default class AddStoryPresenter {
     console.log("AddStoryPresenter: Destroying and cleaning up resources");
 
     try {
-      // Hentikan stream
+      // Stop camera stream
       if (this.stream) {
         this.stream.getTracks().forEach((track) => {
           console.log(`AddStoryPresenter: Stopping ${track.kind} track`);
@@ -138,11 +175,12 @@ export default class AddStoryPresenter {
         this.stream = null;
       }
 
-      if (this.model) {
+      // Cleanup model
+      if (this.model && typeof this.model.stopCameraStream === "function") {
         this.model.stopCameraStream();
       }
 
-      // Bersihkan resource di view
+      // Cleanup view resources
       if (this.view) {
         this.view.cleanupResources();
       }

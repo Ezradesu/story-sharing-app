@@ -84,19 +84,40 @@ document.addEventListener("DOMContentLoaded", async () => {
         applicationServerKey: convertedKey,
       });
 
-      console.log("Push subscribed:", subscription);
+      console.log("🔔 Push subscribed:", subscription);
+
+      const subscriptionData = {
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+      };
+
+      console.log("📤 Sending subscription data:", subscriptionData);
+
       updatePushButtonState(true);
 
-      await fetch(`${CONFIG.BASE_URL}/notifications/subscribe`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(subscription),
-      });
+      const response = await fetch(
+        `${CONFIG.BASE_URL}/notifications/subscribe`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(subscriptionData),
+        }
+      );
+
+      const responseData = await response.json();
+      console.log("📥 Subscription response:", responseData);
+
+      if (!response.ok) {
+        throw new Error(`Subscription failed: ${responseData.message}`);
+      }
+
+      console.log("✅ Successfully subscribed to push notifications");
     } catch (err) {
-      console.error("Gagal subscribe ke push:", err);
+      console.error("❌ Gagal subscribe ke push:", err);
       updatePushButtonState(false);
     }
   }
