@@ -123,39 +123,68 @@ async function cacheFirstStrategy(request) {
   return response;
 }
 
-// Push Notification
+// Push Notification - FIXED PAYLOAD HANDLING
 self.addEventListener("push", (event) => {
   console.log("📨 Push received");
 
-  let payload = {
+  // Default payload
+  let notificationData = {
     title: "Notifikasi Baru",
-    options: {
-      body: "Anda menerima notifikasi baru",
-    },
+    body: "Anda menerima notifikasi baru",
+    icon: "/favicon.ico",
+    badge: "/favicon.ico",
+    url: "/",
+    actions: [],
   };
 
   if (event.data) {
     try {
-      payload = event.data.json();
-      console.log("📦 Push data:", payload);
-    } catch (e) {
-      payload.options.body = event.data.text();
+      const payload = event.data.json();
+      console.log("📦 Raw push data:", payload);
+
+      // Handle payload sesuai dengan format API documentation
+      // Server mengirim: { title: "...", options: { body: "..." } }
+      notificationData = {
+        title: payload.title || notificationData.title,
+        body: payload.options?.body || notificationData.body,
+        icon: payload.options?.icon || notificationData.icon,
+        badge: payload.options?.badge || notificationData.badge,
+        url: payload.options?.url || notificationData.url,
+        actions: payload.options?.actions || notificationData.actions,
+      };
+    } catch (error) {
+      console.error("❌ Error parsing push data:", error);
+      // Jika JSON parsing gagal, coba ambil sebagai text
+      try {
+        notificationData.body = event.data.text();
+      } catch (textError) {
+        console.error("❌ Error parsing push data as text:", textError);
+      }
     }
   }
 
+  // Notification options
   const options = {
-    body: payload.options?.body || "Anda menerima notifikasi baru",
-    icon: payload.options?.icon || "/favicon.ico",
-    badge: payload.options?.badge || "/favicon.ico",
+    body: notificationData.body,
+    icon: notificationData.icon,
+    badge: notificationData.badge,
     vibrate: [100, 50, 100],
     data: {
-      url: payload.options?.url || "/",
+      url: notificationData.url,
     },
     requireInteraction: false,
-    actions: payload.options?.actions || [],
+    actions: notificationData.actions,
+    // Additional options for better UX
+    silent: false,
+    renotify: false,
+    tag: "app-notification", // Untuk mengganti notifikasi yang sama
   };
 
-  event.waitUntil(self.registration.showNotification(payload.title, options));
+  console.log("🔔 Showing notification:", notificationData.title, options);
+
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, options)
+  );
 });
 
 // Notification Click
@@ -169,15 +198,20 @@ self.addEventListener("notificationclick", (event) => {
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
+        // Cari tab yang sudah ada dengan URL yang sama
         for (const client of clientList) {
           if (client.url.includes(urlToOpen) && "focus" in client) {
             return client.focus();
           }
         }
 
+        // Jika tidak ada tab yang cocok, buka tab baru
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
         }
+      })
+      .catch((error) => {
+        console.error("❌ Error handling notification click:", error);
       })
   );
 });
@@ -189,4 +223,6 @@ self.addEventListener("error", (event) => {
 
 self.addEventListener("unhandledrejection", (event) => {
   console.error("💥 Unhandled Rejection:", event.reason);
+  // Prevent the default handling (which would log the error to console)
+  event.preventDefault();
 });
