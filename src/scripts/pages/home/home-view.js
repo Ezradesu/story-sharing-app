@@ -39,6 +39,7 @@ export default class HomeView {
         }" width="200"/>
               <p>${story.description}</p>
               <p>${new Date(story.createdAt).toLocaleString()}</p>
+              <p>${story.lat}, ${story.lon}</p>
               <div class="story-actions">
                 <a href="#/detail/${story.id}" class="btn">Lihat Detail</a>
                 
