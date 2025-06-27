@@ -1,4 +1,13 @@
 import L from "leaflet";
+import marker from "/images/marker-icon-2x.png";
+import shadow from "/images/marker-shadow.png";
+
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconUrl: marker,
+  shadowUrl: shadow,
+});
 
 export default class AddStoryPresenter {
   constructor(view, model) {

@@ -2,11 +2,9 @@ import "../styles/styles.css";
 import CONFIG from "./config";
 import App from "./pages/app";
 
-// ====== CONSTANTS ======
 const VAPID_PUBLIC_KEY =
   "BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk";
 
-// ====== SERVICE WORKER & PUSH NOTIFICATION MANAGER ======
 class PushNotificationManager {
   constructor() {
     this.registration = null;
@@ -23,7 +21,6 @@ class PushNotificationManager {
       this.registration = await navigator.serviceWorker.register("/sw.js");
       console.log("✅ Service Worker registered:", this.registration);
 
-      // Wait for service worker to be ready
       await navigator.serviceWorker.ready;
 
       await this.checkExistingSubscription();
@@ -229,7 +226,6 @@ class PushNotificationManager {
   }
 
   showNotificationPermissionSuccess() {
-    // You can customize this method to show a success message
     if (Notification.permission === "granted") {
       new Notification("🎉 Notifikasi Aktif!", {
         body: "Anda akan menerima notifikasi untuk update terbaru",
@@ -256,7 +252,6 @@ class PushNotificationManager {
   }
 }
 
-// ====== AUTHENTICATION MANAGER ======
 class AuthenticationManager {
   constructor() {
     this.token = localStorage.getItem("token");
@@ -273,7 +268,6 @@ class AuthenticationManager {
     };
 
     if (this.token) {
-      // User is logged in
       if (elements.registerLink) elements.registerLink.style.display = "none";
       if (elements.loginLink) elements.loginLink.style.display = "none";
       if (elements.logoutBtn) elements.logoutBtn.style.display = "block";
@@ -281,7 +275,6 @@ class AuthenticationManager {
       if (elements.savedLink) elements.savedLink.style.display = "block";
       if (elements.pushButton) elements.pushButton.style.display = "block";
     } else {
-      // User is not logged in
       if (elements.registerLink) elements.registerLink.style.display = "block";
       if (elements.loginLink) elements.loginLink.style.display = "block";
       if (elements.logoutBtn) elements.logoutBtn.style.display = "none";
@@ -299,7 +292,6 @@ class AuthenticationManager {
       e.preventDefault();
 
       try {
-        // Unsubscribe from push notifications before logout
         const pushManager = new PushNotificationManager();
         if (pushManager.isSupported) {
           await pushManager.init();
@@ -328,7 +320,6 @@ class AuthenticationManager {
   }
 }
 
-// ====== UTILITY FUNCTIONS ======
 function arrayBufferToBase64(buffer) {
   const bytes = new Uint8Array(buffer);
   let binary = "";
@@ -338,23 +329,19 @@ function arrayBufferToBase64(buffer) {
   return btoa(binary);
 }
 
-// ====== MAIN APPLICATION INITIALIZATION ======
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🚀 Initializing application...");
 
   try {
-    // Initialize Authentication Manager
     const authManager = new AuthenticationManager();
     authManager.updateUIForAuthState();
     authManager.setupLogoutHandler();
 
-    // Initialize Push Notification Manager (only if user is logged in)
     if (authManager.token) {
       const pushManager = new PushNotificationManager();
       await pushManager.init();
     }
 
-    // Initialize Main App
     const app = new App({
       content: document.querySelector("#main-content"),
       drawerButton: document.querySelector("#drawer-button"),
@@ -363,7 +350,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     await app.renderPage();
 
-    // Handle hash changes
     window.addEventListener("hashchange", async () => {
       await app.renderPage();
 
@@ -378,7 +364,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// ====== GLOBAL ERROR HANDLERS ======
 window.addEventListener("error", (event) => {
   console.error("💥 Global error:", event.error);
 });
